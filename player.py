@@ -8,6 +8,7 @@ from enemy import Enemy
 from ItemDrop import ItemDrop
 from key_pressed_notifier import KeyPressedNotifier
 from text_display import FloatingText
+import time
 
 def load_spritesheet(image_path, sprite_width, sprite_height, rows, columns):
     sheet = pygame.image.load(image_path).convert_alpha()
@@ -149,6 +150,8 @@ class Player(pygame.sprite.Sprite):
         self.last_melee_time = 0
         self.attack_start_time = 0
 
+        self.last_shuriken_message_time = 0
+        self.shuriken_message_cooldown = 5  # 5 seconds cooldown
 
         KeyPressedNotifier.subscribe(self.on_keydown_event)
 
@@ -489,7 +492,10 @@ class Player(pygame.sprite.Sprite):
         
         closest_enemy = self.find_closest_enemy(self.attack_range)
         if not closest_enemy:
-            print("No enemy found within range to attack with shuriken")
+            current_time = time.time()
+            if current_time - self.last_shuriken_message_time > self.shuriken_message_cooldown:
+                print("No enemy found within range to attack with shuriken")
+                self.last_shuriken_message_time = current_time
             return
         
         direction = pygame.math.Vector2(closest_enemy.rect.center) - pygame.math.Vector2(self.rect.center)
