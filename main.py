@@ -7,18 +7,6 @@ from button import *
 from enum import Enum
 from key_pressed_notifier import KeyPressedNotifier
 
-def create_glow_surface(surface, glow_color=(255, 255, 0), glow_radius=5):
-    glow_surface = pygame.Surface((surface.get_width() + glow_radius * 1, surface.get_height() + glow_radius * 2), pygame.SRCALPHA)
-    surf_center = (glow_surface.get_width() // 2, glow_surface.get_height() // 2)
-    
-    for i in range(glow_radius, 0, -1):
-        glow = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-        pygame.draw.rect(glow, (*glow_color, 255 // glow_radius * (glow_radius - i + 1)), surface.get_rect(), border_radius=i)
-        glow_surface.blit(glow, (surf_center[0] - surface.get_width() // 2, surf_center[1] - surface.get_height() // 2), special_flags=pygame.BLEND_RGBA_ADD)
-    
-    glow_surface.blit(surface, (glow_radius, glow_radius))
-    return glow_surface
-
 class GameState(Enum):
     MENU = 1
     VILLAGE = 2
@@ -70,9 +58,6 @@ class Game:
         self.mission_buttons = {}
         self.player = None
         self.create_default_player()
-
-        self.office_building_glow = create_glow_surface(self.office_building)
-        self.is_office_hovered = False
 
     def pixel_perfect_collision(self, surface, pos):
         try:
@@ -280,16 +265,7 @@ class Game:
             # Draw building images
             for building, image in self.buildings.items():
                 if building == 'office':
-                    mouse_pos = pygame.mouse.get_pos()
-                    scaled_pos = (mouse_pos[0] // self.ZOOM_FACTOR, mouse_pos[1] // self.ZOOM_FACTOR)
-                    office_rect = self.office_building.get_rect(topleft=(self.GAME_WIDTH // 3, 0))
-                    
-                    if office_rect.collidepoint(scaled_pos):
-                        self.is_office_hovered = True
-                        self.game_surface.blit(self.office_building_glow, (self.GAME_WIDTH // 3 - 10, -10))
-                    else:
-                        self.is_office_hovered = False
-                        self.game_surface.blit(image, (self.GAME_WIDTH // 3, 0))
+                    self.game_surface.blit(image, (self.GAME_WIDTH // 3, 0))
                 else:
                     self.game_surface.blit(image, (0, 0))
 
