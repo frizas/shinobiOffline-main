@@ -62,7 +62,7 @@ weapon_data = {
 
 # Dados dos monstros
 monster_data = {
-    'Doborou': {'hp': 200, 'speed': 40, 'graphic': 'images/monster/gordo.png', 'behavior': 'aggressive', 'vision_radius': 250, 'experience': 50,'melee_skill': 20,'defense_skill':10},
+    'Dorobou': {'hp': 200, 'speed': 40, 'graphic': 'images/monster/gordo.png', 'behavior': 'aggressive', 'vision_radius': 250, 'experience': 50,'melee_skill': 20,'defense_skill':10},
     'Hoshi': {'hp': 100, 'speed': 45, 'graphic': 'images/monster/ninja1.png', 'behavior': 'defensive', 'vision_radius': 350, 'experience': 70,'melee_skill': 5,'defense_skill':1},
     'Katsu': {'hp': 80, 'speed': 75, 'graphic': 'images/monster/ninja2.png', 'behavior': 'aggressive', 'vision_radius': 300, 'experience': 65,'melee_skill': 15,'defense_skill':8},
 }
@@ -148,5 +148,6 @@ ninjutsu_data = {
         'Wind Cutter': {'mana_cost': 55, 'damage': 80}
     }
 }
+
 
 
