@@ -154,8 +154,22 @@ class Player(pygame.sprite.Sprite):
         self.shuriken_message_cooldown = 5  # 5 seconds cooldown
 
         KeyPressedNotifier.subscribe(self.on_keydown_event)
+        self.reset_raikiri_state()
+        self.raikiri_max_duration = 5000  # Maximum duration for Raikiri state (5 seconds)
+        self.raikiri_animation_duration = 1000  # Duration of the initial Raikiri animation in milliseconds
+        self.raikiri_animation_complete = False
 
-   
+    def reset_raikiri_state(self):
+        self.is_performing_special_attack = False
+        self.raikiri_target = None
+        self.raikiri_moving = False
+        self.invincible = False
+        self.raikiri_animation_complete = False
+        if self.aura:
+            self.aura.destroy()
+            self.aura = None
+        self.action = f'idle_{self.last_direction}'
+
     def get_melee_animation(self):
         if self.inventory['melee_weapon'] == 'fist':
             action_type = random.choice(['attack', 'kick'])
@@ -547,39 +561,33 @@ class Player(pygame.sprite.Sprite):
             self.raikiri_target = closest_enemy
             
             self.aura = ElectricAura(self, [self.groups()[0], self.level.all_sprites])
-            self.raikiri_end_time = pygame.time.get_ticks() 
+            self.raikiri_start_time = pygame.time.get_ticks()
+            self.raikiri_end_time = self.raikiri_start_time + self.raikiri_max_duration
+            self.raikiri_animation_complete = False
         else:
-            self.is_performing_special_attack = False
+            self.reset_raikiri_state()
 
     def move_to_target(self, dt):
-        if self.raikiri_target:
+        if self.raikiri_target and self.raikiri_target.hp > 0:
             direction = pygame.math.Vector2(self.raikiri_target.rect.center) - pygame.math.Vector2(self.rect.center)
-            if direction.length() > 0:
+            distance = direction.length()
+            if distance > 0:
                 direction.normalize_ip()
                 self.update_direction(direction)
                 self.action = f'run_{self.last_direction}'
                 self.rect.center += direction * self.running_speed * 2 * dt
                 self.invincible = True
-                if pygame.math.Vector2(self.rect.center).distance_to(self.raikiri_target.rect.center) < 40:
-                    raikiridmg = 150*self.ninjutsu
-                    self.raikiri_target.take_damage(raikiridmg, self.level.all_sprites, self.level.tiles, (0, 150, 240),direction)
-                    for _ in range(20):  # Cria 10 partículas
-                        Particle(self.raikiri_target.rect.bottomright  , [self.level.all_sprites],(230,230,250),initial_size=8,lifespan=2000)
-                        Particle(self.raikiri_target.rect.bottomright  , [self.level.all_sprites],(230,10,0),initial_size=4,lifespan=2000)
-
-                    self.raikiri_target = None
-                    self.raikiri_end_time = pygame.time.get_ticks() 
-                    self.raikiri_moving = False
-                    self.invincible = False
-                    targets=self.level.enemy_count
-                    if random.random() < (0.2+0.05*targets):
-                        self.raikiri_target = self.find_closest_enemy(900)
-                        self.move_to_target(dt)            
-        if self.raikiri_target is None:
-            self.is_performing_special_attack = False
-            if self.aura:
-                self.aura.destroy()
-                self.aura = None
+                if distance < 40:
+                    raikiridmg = 150 * self.ninjutsu
+                    self.raikiri_target.take_damage(raikiridmg, self.level.all_sprites, self.level.tiles, (0, 150, 240), direction)
+                    for _ in range(20):
+                        Particle(self.raikiri_target.rect.bottomright, [self.level.all_sprites], (230,230,250), initial_size=8, lifespan=2000)
+                        Particle(self.raikiri_target.rect.bottomright, [self.level.all_sprites], (230,10,0), initial_size=4, lifespan=2000)
+                    self.reset_raikiri_state()
+            else:
+                self.reset_raikiri_state()
+        else:
+            self.reset_raikiri_state()
 
     def update_direction(self, direction):
         if abs(direction.x) > abs(direction.y):
@@ -688,11 +696,18 @@ class Player(pygame.sprite.Sprite):
         self.check_item_collisions()
         self.attack_with_shuriken()
         if self.is_performing_special_attack:
-            if not self.raikiri_moving:
-                if now - self.raikiri_start_time >= self.raikiri_duration:
-                    self.raikiri_moving = True
-            if self.raikiri_moving:
+            now = pygame.time.get_ticks()
+            if not self.raikiri_animation_complete:
+                if now - self.raikiri_start_time >= self.raikiri_animation_duration:
+                    self.raikiri_animation_complete = True
+                else:
+                    # During animation, just update the electric effect
+                    if self.aura:
+                        self.aura.update(dt)
+            elif self.raikiri_target and self.raikiri_target.hp > 0:
                 self.move_to_target(dt)
+            elif now >= self.raikiri_end_time or not self.raikiri_target or self.raikiri_target.hp <= 0:
+                self.reset_raikiri_state()
     
 
    
