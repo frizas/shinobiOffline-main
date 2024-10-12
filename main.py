@@ -6,6 +6,8 @@ from level import Level
 from button import *
 from enum import Enum
 from key_pressed_notifier import KeyPressedNotifier
+import random
+import math
 
 class GameState(Enum):
     MENU = 1
@@ -17,6 +19,46 @@ class GameState(Enum):
     OFFICE = 7
     SHOP = 8
     BARRACKS = 9
+
+class ZoomingWindEffect(pygame.sprite.Sprite):
+    def __init__(self, center, groups, screen_width, screen_height):
+        super().__init__(groups)
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.center = center
+        self.lines = []
+        self.spawn_time = pygame.time.get_ticks()
+        self.spawn_interval = 100  # Spawn new lines every 100ms
+        self.max_lines = 20
+        self.image = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+        self.rect = self.image.get_rect()
+
+    def update(self, dt):
+        current_time = pygame.time.get_ticks()
+        
+        # Spawn new lines
+        if current_time - self.spawn_time > self.spawn_interval and len(self.lines) < self.max_lines:
+            self.spawn_time = current_time
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(100, 300)
+            self.lines.append({
+                'pos': pygame.math.Vector2(self.center),
+                'vel': pygame.math.Vector2(math.cos(angle), math.sin(angle)) * speed,
+                'length': random.randint(10, 30)
+            })
+
+        # Update and draw lines
+        self.image.fill((0, 0, 0, 0))
+        for line in self.lines[:]:
+            line['pos'] += line['vel'] * dt
+            end_pos = line['pos'] + line['vel'].normalize() * line['length']
+            
+            pygame.draw.line(self.image, (200, 200, 200, 100), line['pos'], end_pos, 1)
+            
+            # Remove lines that are off-screen
+            if (line['pos'].x < 0 or line['pos'].x > self.screen_width or
+                line['pos'].y < 0 or line['pos'].y > self.screen_height):
+                self.lines.remove(line)
 
 class Game:
     def __init__(self):
@@ -58,6 +100,9 @@ class Game:
         self.mission_buttons = {}
         self.player = None
         self.create_default_player()
+
+        # Add this line after initializing self.game_surface
+        self.wind_effect = ZoomingWindEffect((self.GAME_WIDTH // 2, self.GAME_HEIGHT // 2), [], self.GAME_WIDTH, self.GAME_HEIGHT)
 
     def pixel_perfect_collision(self, surface, pos):
         try:
@@ -182,7 +227,12 @@ class Game:
 
         start_game_button = Button(self.GAME_WIDTH // 2 - 100, start_y, 200, 50, "Start Game", 'green')
         quit_button = Button(self.GAME_WIDTH // 2 - 100, quit_y, 200, 50, "Quit", 'red')
+        
+        clock = pygame.time.Clock()
+        
         while self.state == GameState.MENU:
+            dt = clock.tick(60) / 1000.0  # Get delta time in seconds
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
@@ -198,6 +248,11 @@ class Game:
                         sys.exit()
 
             self.game_surface.blit(pygame.transform.scale(self.menu_background, (self.GAME_WIDTH, self.GAME_HEIGHT)), (0, 0))
+            
+            # Update and draw the wind effect
+            self.wind_effect.update(dt)
+            self.game_surface.blit(self.wind_effect.image, (0, 0))
+            
             self.draw_text('Shinobi Offline', 48, self.GAME_WIDTH // 2, self.GAME_HEIGHT // 4)
             start_game_button.draw(self.game_surface)
             quit_button.draw(self.game_surface)
