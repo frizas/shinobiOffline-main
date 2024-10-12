@@ -176,8 +176,12 @@ class Game:
                     action()
 
     def show_menu(self):
-        start_game_button = Button(self.GAME_WIDTH // 2 - 100, self.GAME_HEIGHT // 2, 200, 50, "Start Game", 'green')
-        quit_button = Button(self.GAME_WIDTH // 2 - 100, self.GAME_HEIGHT // 2 + 60, 200, 50, "Quit", 'red')
+        # Calculate new y-positions (15% lower)
+        start_y = int(self.GAME_HEIGHT * 0.65)  # 65% down the screen instead of 50%
+        quit_y = start_y + 60  # Keep the same spacing between buttons
+
+        start_game_button = Button(self.GAME_WIDTH // 2 - 100, start_y, 200, 50, "Start Game", 'green')
+        quit_button = Button(self.GAME_WIDTH // 2 - 100, quit_y, 200, 50, "Quit", 'red')
         while self.state == GameState.MENU:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
